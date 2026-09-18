@@ -33,7 +33,7 @@ class MainActivity:ComponentActivity(){
     override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState); val incoming=if(intent.action==Intent.ACTION_SEND)intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM) else null; setContent{QxTheme{QxApp(vm,incoming)}}}
 }
 
-@Composable private fun QxTheme(content:@Composable()->Unit){MaterialTheme(colorScheme=darkColorScheme(background=Ink,surface=Panel,primary=Teal,onPrimary=Ink,secondary=Teal,onBackground=Color(0xFFEAF0F7),onSurface=Color(0xFFEAF0F7),error=Red),content=content)}
+@Composable private fun QxTheme(content: @Composable () -> Unit){MaterialTheme(colorScheme=darkColorScheme(background=Ink,surface=Panel,primary=Teal,onPrimary=Ink,secondary=Teal,onBackground=Color(0xFFEAF0F7),onSurface=Color(0xFFEAF0F7),error=Red),content=content)}
 
 @Composable private fun QxApp(vm:MainViewModel,incoming:Uri?){
     var page by remember{mutableStateOf("HOME")}; val state by vm.state.collectAsState(); val history by vm.history.collectAsState(initial=emptyList()); val strictness by vm.strictness.collectAsState(); val picker=rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()){it?.let{vm.analyze(it);page="ANALYSIS"}}
