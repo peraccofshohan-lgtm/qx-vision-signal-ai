@@ -62,7 +62,8 @@ jobs:
           test -n "$AAPT"
           BADGING="$($AAPT dump badging "$APK")"
           echo "$BADGING"
-          echo "$BADGING" | grep -F "package: name='ai.qxvision.signal' versionName='1.0.0'"
+          echo "$BADGING" | grep -F "package: name='ai.qxvision.signal'"
+          echo "$BADGING" | grep -F "versionName='1.0.0'"
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
