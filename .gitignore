@@ -1,0 +1,44 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Local data and artifacts
+/data/
+/datasets/
+/candidate_dataset/
+*.csv
+*.parquet
+*.arrow
+*.onnx
+*.tflite
+*.pt
+*.pth
+*.safetensors
+models/**/metrics.local.json
+
+# Images, logs, secrets
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ppm
+*.log
+.env
+.env.*
+!.env.example

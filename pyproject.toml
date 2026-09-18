@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qx-vision-signal-ai"
+version = "1.0.0"
+description = "Offline screenshot chart reconstruction and uncertainty-aware next-candle research pipeline"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+qxvision = "qxvision.cli:main"
+
+[tool.qxvision]
+feature-schema-version = "qxvision.features.v1"
