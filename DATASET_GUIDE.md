@@ -9,9 +9,13 @@ timestamp,open,high,low,close,volume,asset,timeframe
 
 `volume` may be blank. `asset` and `timeframe` are required so windows never cross instruments or timeframes. High/low invariants are checked.
 
+## Dataset identity and validation
+
+`training.validate_dataset` supports CSV and optional Parquet (PyArrow). It rejects missing columns, naive/invalid timestamps, NaN/infinite values, duplicate timestamps/candles, unsorted rows, negative volume, invalid OHLC relationships, mixed timeframes, and timeframe interval inconsistencies. Invalid rows are recorded in a quarantine report. Metadata contains `dataset_id`, `dataset_version`, creation time, source description, SHA-256, assets, timeframes, date range, and row counts. Metadata paths are immutable by default; replacement requires an explicit `--force`.
+
 ## Label definition
 
-For a feature window ending at prediction time `t`, the target is the **next completed row** at `t+1`: `UP` when `close > open`, `DOWN` when `close < open`; doji targets are skipped by the candidate trainer rather than forced into a direction. The current running screenshot candle is never treated as the target.
+For a feature window ending at prediction time `t`, the target is the **next completed row** at `t+1`: `UP` when `next.close > next.open`, `DOWN` when `next.close < next.open`, and exact `DOJI` is excluded. The optional `next_close_current_close` target is versioned separately and is never mixed with the default. The current running screenshot candle is never treated as the target.
 
 ## Quality and leakage controls
 

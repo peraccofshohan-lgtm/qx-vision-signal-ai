@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import math
 import statistics
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -80,6 +80,27 @@ class PlattCalibrator:
     def to_json(self) -> dict: return {"method": "platt", "a": self.a, "b": self.b, "fitted": self.fitted}
 
 
+class IsotonicCalibrator:
+    """Pool-adjacent-violators calibration, used only with adequate validation data."""
+    def __init__(self, x: Sequence[float] = (), y: Sequence[float] = (), fitted: bool = False): self.x, self.y, self.fitted = list(x), list(y), fitted
+    def fit(self, probabilities: Sequence[float], labels: Sequence[int]) -> "IsotonicCalibrator":
+        if len(probabilities) != len(labels) or len(probabilities) < 20: raise ValueError("isotonic calibration needs at least 20 aligned validation samples")
+        pairs=sorted((float(p),float(y)) for p,y in zip(probabilities,labels)); blocks=[]
+        for probability,label in pairs:
+            blocks.append([probability,probability,label,1.0])
+            while len(blocks)>=2 and blocks[-2][2]/blocks[-2][3] > blocks[-1][2]/blocks[-1][3]:
+                right=blocks.pop(); left=blocks.pop(); blocks.append([left[0],right[1],left[2]+right[2],left[3]+right[3]])
+        self.x=[block[1] for block in blocks]; self.y=[block[2]/block[3] for block in blocks]; self.fitted=True; return self
+    def transform(self, probability: float) -> float:
+        if not self.fitted or not self.x: return max(0.0,min(1.0,probability))
+        if probability <= self.x[0]: return self.y[0]
+        for index in range(1,len(self.x)):
+            if probability <= self.x[index]:
+                width=max(1e-9,self.x[index]-self.x[index-1]); fraction=(probability-self.x[index-1])/width; return self.y[index-1]+fraction*(self.y[index]-self.y[index-1])
+        return self.y[-1]
+    def to_json(self)->dict: return {"method":"isotonic","x":self.x,"y":self.y,"fitted":self.fitted}
+
+
 class FeatureOOD:
     """Robust training-distribution bounds, fit on training data only."""
     def __init__(self, medians: Sequence[float], scales: Sequence[float], threshold: float = 6.0): self.medians, self.scales, self.threshold = list(medians), list(scales), threshold
@@ -124,12 +145,19 @@ def load_ensemble(directory: str | Path) -> Optional[Ensemble]:
         calibrator = None
         cp = p / "calibration.json"
         if cp.exists():
-            c = json.loads(cp.read_text()); calibrator = PlattCalibrator(c.get("a", 1), c.get("b", 0), c.get("fitted", False))
+            c = json.loads(cp.read_text())
+            calibrator = IsotonicCalibrator(c.get("x", []), c.get("y", []), c.get("fitted", False)) if c.get("method") == "isotonic" else PlattCalibrator(c.get("a", 1), c.get("b", 0), c.get("fitted", False))
         ood = None
         op = p / "ood.json"
         if op.exists():
             o = json.loads(op.read_text()); ood = FeatureOOD(o["medians"], o["scales"], o.get("threshold", 6.0))
         if metadata.get("feature_schema_version") != FEATURE_SCHEMA_VERSION: return None
+        if int(metadata.get("feature_count", len(model.weights))) != len(model.weights): return None
+        schema_path = p / "feature_schema.json"
+        if not schema_path.exists(): return None
+        from .schema import feature_schema
+        schema_document = json.loads(schema_path.read_text())
+        if schema_document.get("schema_version") != FEATURE_SCHEMA_VERSION or schema_document.get("order") != feature_schema().get("order"): return None
         return Ensemble([model], [1.0], calibrator, ood, metadata.get("model_version", "unknown"))
     except (ValueError, KeyError, OSError, json.JSONDecodeError):
         return None
@@ -137,7 +165,85 @@ def load_ensemble(directory: str | Path) -> Optional[Ensemble]:
 
 def save_ensemble(directory: str | Path, ensemble: Ensemble) -> None:
     p = Path(directory); p.mkdir(parents=True, exist_ok=True)
-    p.joinpath("metadata.json").write_text(json.dumps({"model_version": ensemble.version, "feature_schema_version": FEATURE_SCHEMA_VERSION, "type": "logistic_regression", "artifact_status": "candidate"}, indent=2))
+    feature_count = len(ensemble.models[0].weights) if ensemble.models else 0
+    p.joinpath("metadata.json").write_text(json.dumps({"model_version": ensemble.version, "feature_schema_version": FEATURE_SCHEMA_VERSION, "feature_count": feature_count, "input_name": "features", "output_name": "probability_up", "output_semantics": "calibrated_or_raw_probability_up", "type": "logistic_regression", "artifact_status": "candidate"}, indent=2))
     if ensemble.models: p.joinpath("logistic.json").write_text(json.dumps(ensemble.models[0].to_json(), indent=2))
     if ensemble.calibrator: p.joinpath("calibration.json").write_text(json.dumps(ensemble.calibrator.to_json(), indent=2))
     if ensemble.ood: p.joinpath("ood.json").write_text(json.dumps(ensemble.ood.to_json(), indent=2))
+    from .schema import write_feature_schema
+    write_feature_schema(p / "feature_schema.json")
+
+@dataclass
+class DecisionStump:
+    feature_index: int
+    threshold: float
+    left_value: float
+    right_value: float
+
+    def value(self, row: Sequence[float]) -> float:
+        return self.left_value if row[self.feature_index] <= self.threshold else self.right_value
+
+
+class GradientBoostingStumps:
+    """Small dependency-free gradient-boosting equivalent for evaluation."""
+    def __init__(self, base_logit: float, stumps: Sequence[DecisionStump], learning_rate: float = .08, version: str = "candidate-gradient-stumps"):
+        self.base_logit, self.stumps, self.learning_rate, self.version = base_logit, list(stumps), learning_rate, version
+
+    def probability(self, values: Sequence[float]) -> float:
+        score = self.base_logit + self.learning_rate * sum(stump.value(values) for stump in self.stumps)
+        return _sigmoid(score)
+
+
+class RandomStumpForest:
+    """Deterministic random-stump forest; used as a transparent RF-equivalent baseline."""
+    def __init__(self, stumps: Sequence[DecisionStump], version: str = "candidate-random-stump-forest"):
+        self.stumps, self.version = list(stumps), version
+
+    def probability(self, values: Sequence[float]) -> float:
+        if not self.stumps: return .5
+        return max(0.0, min(1.0, sum(_sigmoid(stump.value(values)) for stump in self.stumps) / len(self.stumps)))
+
+
+def _candidate_thresholds(values: Sequence[float], maximum: int = 12) -> List[float]:
+    unique = sorted(set(float(value) for value in values))
+    if len(unique) <= 1: return unique
+    if len(unique) <= maximum: return [(a + b) / 2 for a, b in zip(unique, unique[1:])]
+    return [(unique[int(i * (len(unique) - 1) / maximum)] + unique[min(len(unique) - 1, int((i + 1) * (len(unique) - 1) / maximum))]) / 2 for i in range(maximum)]
+
+
+def _fit_regression_stump(samples: Sequence[Sequence[float]], targets: Sequence[float], feature_indices: Sequence[int]) -> DecisionStump:
+    best: Optional[Tuple[float, DecisionStump]] = None
+    for feature in feature_indices:
+        column = [row[feature] for row in samples]
+        for threshold in _candidate_thresholds(column):
+            left = [target for row, target in zip(samples, targets) if row[feature] <= threshold]
+            right = [target for row, target in zip(samples, targets) if row[feature] > threshold]
+            if not left or not right: continue
+            left_value, right_value = sum(left) / len(left), sum(right) / len(right)
+            loss = sum((target - left_value) ** 2 for target in left) + sum((target - right_value) ** 2 for target in right)
+            candidate = DecisionStump(feature, threshold, left_value, right_value)
+            if best is None or loss < best[0]: best = (loss, candidate)
+    if best is None:
+        mean = sum(targets) / max(1, len(targets)); return DecisionStump(0, float("inf"), mean, mean)
+    return best[1]
+
+
+def fit_gradient_boosting(samples: Sequence[Sequence[float]], labels: Sequence[int], *, rounds: int = 40, learning_rate: float = .08) -> GradientBoostingStumps:
+    if not samples: raise ValueError("samples must be non-empty")
+    prior = max(1e-5, min(1 - 1e-5, sum(labels) / len(labels))); base = math.log(prior / (1 - prior)); stumps: List[DecisionStump] = []
+    scores = [base] * len(labels)
+    for _ in range(rounds):
+        residuals = [label - _sigmoid(score) for label, score in zip(labels, scores)]
+        stump = _fit_regression_stump(samples, residuals, range(len(samples[0]))); stumps.append(stump)
+        scores = [score + learning_rate * stump.value(row) for score, row in zip(scores, samples)]
+    return GradientBoostingStumps(base, stumps, learning_rate)
+
+
+def fit_random_forest(samples: Sequence[Sequence[float]], labels: Sequence[int], *, trees: int = 40, seed: int = 17) -> RandomStumpForest:
+    if not samples: raise ValueError("samples must be non-empty")
+    rng = __import__("random").Random(seed); feature_count = len(samples[0]); stumps=[]
+    for _ in range(trees):
+        feature = rng.randrange(feature_count); threshold_candidates = _candidate_thresholds([row[feature] for row in samples]); threshold = rng.choice(threshold_candidates) if threshold_candidates else 0.0
+        left=[label for row,label in zip(samples,labels) if row[feature]<=threshold]; right=[label for row,label in zip(samples,labels) if row[feature]>threshold]
+        stumps.append(DecisionStump(feature,threshold,sum(left)/len(left) if left else .5,sum(right)/len(right) if right else .5))
+    return RandomStumpForest(stumps)

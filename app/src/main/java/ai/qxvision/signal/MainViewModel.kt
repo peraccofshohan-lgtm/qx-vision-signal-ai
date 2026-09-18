@@ -31,6 +31,7 @@ class MainViewModel(app:Application):AndroidViewModel(app){
     private val _strictness=MutableStateFlow(prefs.getString("strictness","BALANCED")?:"BALANCED")
     val strictness:StateFlow<String> = _strictness.asStateFlow()
     private var previousHash:String?=null
+    private var modelWarmed=false
     private fun policy()=when(_strictness.value){"CONSERVATIVE"->SignalEngine.Policy(.70f,.60f,.70f,.34f,10);"CUSTOM"->SignalEngine.Policy(.66f,.55f,.65f,.40f,8);else->SignalEngine.Policy()}
     fun setStrictness(value:String){if(value !in setOf("CONSERVATIVE","BALANCED","CUSTOM"))return; prefs.edit().putString("strictness",value).apply(); _strictness.value=value}
 
@@ -43,7 +44,7 @@ class MainViewModel(app:Application):AndroidViewModel(app){
             _state.value=AnalysisUiState(AnalysisStage.Reconstructing,bitmap=bitmap)
             val start=System.nanoTime(); val visionStart=System.nanoTime(); val sequence=vision.analyze(bitmap,duplicate); val visionEnd=System.nanoTime()
             _state.value=AnalysisUiState(AnalysisStage.Extracting,bitmap=bitmap)
-            val featureStart=System.nanoTime(); val market=features.state(sequence.candles); val vector=features.vector(sequence.candles,sequence.chart.quality,market); val featureEnd=System.nanoTime(); model.warmup(vector.values.size)
+            val featureStart=System.nanoTime(); val market=features.state(sequence.candles); val vector=features.vector(sequence.candles,sequence.chart.quality,market); val featureEnd=System.nanoTime(); if(!modelWarmed){model.warmup(vector.values.size);modelWarmed=true}
             _state.value=AnalysisUiState(AnalysisStage.Ensemble,bitmap=bitmap)
             val decisionStart=System.nanoTime(); _state.value=AnalysisUiState(AnalysisStage.FinalDecision,bitmap=bitmap)
             val decision=signal.decide(sequence,market,vector,ensemble,policy=policy(),elapsedMs=(System.nanoTime()-start)/1_000_000); val decisionEnd=System.nanoTime()

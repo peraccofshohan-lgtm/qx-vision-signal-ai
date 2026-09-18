@@ -33,7 +33,7 @@ The Python implementation is deterministic and dependency-light; Pillow is optio
 
 ## ML, calibration, and OOD
 
-The training path currently implements a transparent logistic baseline. Its model is fitted on train windows, Platt calibration on validation windows, and robust median/MAD OOD bounds on training windows. The registry loader refuses missing or incompatible artifacts. Android uses ONNX Runtime Mobile only when `models/v1/ensemble/model.onnx` exists and a fitted calibration artifact exists.
+The training path evaluates a transparent logistic baseline, gradient-boosting stumps, and a deterministic random-stump forest. Models are fitted on train windows; Platt and, when sample-supported, isotonic calibration are selected on validation windows; robust median/MAD OOD bounds are fitted on training windows. Threshold selection and model selection are validation-only. The final holdout is evaluated once after selection. The registry loader refuses missing, checksum-incomplete, incompatible, or schema-mismatched artifacts. Android uses ONNX Runtime Mobile only when `models/v1/ensemble/model.onnx` exists with matching metadata, feature schema, checksum, calibration, and parity evidence.
 
 The architecture accepts additional validated components (random forest, gradient, compact sequence model) behind the same `ModelPrediction` contract. They are not included merely for appearance. A model failure is visible and becomes `NO_TRADE`.
 

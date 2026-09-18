@@ -55,23 +55,67 @@ Pillow is optional and enables JPEG/WEBP decoding in the Python utility:
 python3 -m pip install Pillow
 ```
 
-## Training and evaluation
+## Dataset validation, training, and evaluation
 
-Supply a real OHLC CSV with:
+Supply a real OHLC CSV or Parquet file with:
 
 ```text
 timestamp,open,high,low,close,volume,asset,timeframe
 ```
 
-Then run:
+Validate and version it before training:
 
 ```bash
-python3 -m training.train --ohlc data/your-real-data.csv --output models/v1/ensemble
+python3 -m training.validate_dataset data/your-real-data.csv \
+  --dataset-version 1.0.0 \
+  --metadata data/your-real-data.metadata.json
 ```
 
-The pipeline sorts chronologically, purges split boundaries, excludes the future target from features, fits OOD statistics on training only, calibrates on validation only, and evaluates on a later holdout. A candidate is not promoted when it fails the previous-candle baseline gate. Synthetic screenshots are for reconstruction testing and are never counted as real predictive validation.
+Validation rejects missing columns, ambiguous timestamps, NaN/infinite values, duplicate candles, unsorted rows, invalid OHLC relationships, negative volume, mixed timeframes, and timeframe inconsistencies. It records a checksum, dataset ID, date range, source description, row count, and quarantined rows.
 
-A production artifact intended for Android must additionally be exported as `models/v1/ensemble/model.onnx` with a matching `feature_schema_version`, calibration file, and metadata. Until that happens the Android result remains `NO TRADE`.
+Train candidates on real data:
+
+```bash
+python3 -m training.train \
+  --ohlc data/your-real-data.csv \
+  --output models/v1/ensemble \
+  --dataset-version 1.0.0
+```
+
+The pipeline evaluates logistic regression, gradient-boosting stumps, and a deterministic random-stump forest. It uses chronological splits, a purge gap, validation-only calibration and threshold selection, final-holdout-only-once reporting, random/majority/previous-direction/momentum baselines, risk-coverage curves, reliability curves, asset/time/regime breakdowns, and explicit model-promotion gates. Candidate files are written below `models/v1/ensemble/candidate/`; they are not production artifacts. The command intentionally exits non-zero until ONNX parity and promotion gates are completed.
+
+Walk-forward evaluation:
+
+```bash
+python3 -m training.walk_forward \
+  --ohlc data/your-real-data.csv \
+  --output models/v1/walk_forward.json
+```
+
+Export and verify ONNX parity before promotion:
+
+```bash
+python3 -m training.export_onnx \
+  --registry models/v1/ensemble/candidate \
+  --output models/v1/ensemble/candidate/model.onnx
+python3 -m training.promote \
+  --candidate models/v1/ensemble/candidate \
+  --champion models/v1/ensemble
+```
+
+Importing user-labelled screenshot pairs is also supported through an immutable CSV manifest:
+
+```bash
+python3 -m training.import_screenshot_pairs labels.csv candidate_dataset/samples.jsonl
+```
+
+Each row preserves the original screenshot hash, feature vector, schema version, model version, prediction, probability, and separately supplied `UP`, `DOWN`, `DOJI`, or `UNKNOWN` outcome. Samples are quality-filtered and deduplicated before entering the candidate dataset.
+
+No production artifact is included in this checkout because no real labelled dataset is available. Synthetic screenshots are for reconstruction testing only and are never counted as market validation.
+
+## Current completion level
+
+**LEVEL C — Engineering complete, model unavailable due to missing real data.** The Android app remains fail-closed with `NO TRADE` and `MODEL_ARTIFACT_UNAVAILABLE` until a validated, calibrated, schema-compatible ONNX artifact is actually supplied.
 
 ## Privacy and safety
 

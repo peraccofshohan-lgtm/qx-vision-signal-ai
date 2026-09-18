@@ -1,0 +1,464 @@
+{
+  "schema_version": "qxvision.features.v1",
+  "dtype": "float32",
+  "order": [
+    "quality_score",
+    "blur_score",
+    "chart_coverage",
+    "candle_visibility",
+    "reconstruction_confidence",
+    "last_body_ratio",
+    "last_upper_wick",
+    "last_lower_wick",
+    "last_range",
+    "last_direction",
+    "return_1",
+    "return_2",
+    "return_3",
+    "return_mean",
+    "body_mean",
+    "range_mean",
+    "structure_score",
+    "structure_bullish",
+    "structure_bearish",
+    "bos",
+    "choch",
+    "short_slope",
+    "visible_slope",
+    "trend_efficiency",
+    "trend_score",
+    "momentum_bull",
+    "momentum_bear",
+    "momentum_strength",
+    "momentum_acceleration",
+    "exhaustion",
+    "directional_efficiency",
+    "median_range",
+    "range_std",
+    "recent_long_ratio",
+    "vol_expansion",
+    "vol_contraction",
+    "is_vol_extreme",
+    "is_range",
+    "is_trending_bull",
+    "is_trending_bear",
+    "is_transition",
+    "nearest_support_distance",
+    "nearest_resistance_distance",
+    "support_strength",
+    "resistance_strength",
+    "doji",
+    "hammer",
+    "shooting_star",
+    "engulfing_bull",
+    "engulfing_bear",
+    "inside",
+    "marubozu",
+    "running_present",
+    "running_direction",
+    "running_body_ratio",
+    "running_range",
+    "running_confidence"
+  ],
+  "features": [
+    {
+      "name": "quality_score",
+      "index": 0,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "quality_score: normalized screenshot quality measurement"
+    },
+    {
+      "name": "blur_score",
+      "index": 1,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "blur_score: normalized screenshot quality measurement"
+    },
+    {
+      "name": "chart_coverage",
+      "index": 2,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "chart_coverage: normalized screenshot quality measurement"
+    },
+    {
+      "name": "candle_visibility",
+      "index": 3,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "candle_visibility: normalized screenshot quality measurement"
+    },
+    {
+      "name": "reconstruction_confidence",
+      "index": 4,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "reconstruction_confidence: normalized screenshot quality measurement"
+    },
+    {
+      "name": "last_body_ratio",
+      "index": 5,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "last_body_ratio: normalized candle geometry measurement"
+    },
+    {
+      "name": "last_upper_wick",
+      "index": 6,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "last_upper_wick: normalized candle geometry measurement"
+    },
+    {
+      "name": "last_lower_wick",
+      "index": 7,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "last_lower_wick: normalized candle geometry measurement"
+    },
+    {
+      "name": "last_range",
+      "index": 8,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "last_range: normalized candle geometry measurement"
+    },
+    {
+      "name": "last_direction",
+      "index": 9,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "last_direction: normalized candle geometry measurement"
+    },
+    {
+      "name": "return_1",
+      "index": 10,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "return_1: normalized recent sequence return measurement"
+    },
+    {
+      "name": "return_2",
+      "index": 11,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "return_2: normalized recent sequence return measurement"
+    },
+    {
+      "name": "return_3",
+      "index": 12,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "return_3: normalized recent sequence return measurement"
+    },
+    {
+      "name": "return_mean",
+      "index": 13,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "return_mean: normalized recent sequence return measurement"
+    },
+    {
+      "name": "body_mean",
+      "index": 14,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "body_mean: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "range_mean",
+      "index": 15,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "range_mean: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "structure_score",
+      "index": 16,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "structure_score: normalized market structure measurement"
+    },
+    {
+      "name": "structure_bullish",
+      "index": 17,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "structure_bullish: normalized market structure measurement"
+    },
+    {
+      "name": "structure_bearish",
+      "index": 18,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "structure_bearish: normalized market structure measurement"
+    },
+    {
+      "name": "bos",
+      "index": 19,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "bos: normalized market structure measurement"
+    },
+    {
+      "name": "choch",
+      "index": 20,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "choch: normalized market structure measurement"
+    },
+    {
+      "name": "short_slope",
+      "index": 21,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "short_slope: normalized trend and momentum measurement"
+    },
+    {
+      "name": "visible_slope",
+      "index": 22,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "visible_slope: normalized trend and momentum measurement"
+    },
+    {
+      "name": "trend_efficiency",
+      "index": 23,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "trend_efficiency: normalized trend and momentum measurement"
+    },
+    {
+      "name": "trend_score",
+      "index": 24,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "trend_score: normalized trend and momentum measurement"
+    },
+    {
+      "name": "momentum_bull",
+      "index": 25,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "momentum_bull: normalized trend and momentum measurement"
+    },
+    {
+      "name": "momentum_bear",
+      "index": 26,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "momentum_bear: normalized trend and momentum measurement"
+    },
+    {
+      "name": "momentum_strength",
+      "index": 27,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "momentum_strength: normalized trend and momentum measurement"
+    },
+    {
+      "name": "momentum_acceleration",
+      "index": 28,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "momentum_acceleration: normalized trend and momentum measurement"
+    },
+    {
+      "name": "exhaustion",
+      "index": 29,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "exhaustion: normalized trend and momentum measurement"
+    },
+    {
+      "name": "directional_efficiency",
+      "index": 30,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "directional_efficiency: normalized trend and momentum measurement"
+    },
+    {
+      "name": "median_range",
+      "index": 31,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "median_range: normalized volatility and regime measurement"
+    },
+    {
+      "name": "range_std",
+      "index": 32,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "range_std: normalized volatility and regime measurement"
+    },
+    {
+      "name": "recent_long_ratio",
+      "index": 33,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "recent_long_ratio: normalized volatility and regime measurement"
+    },
+    {
+      "name": "vol_expansion",
+      "index": 34,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "vol_expansion: normalized volatility and regime measurement"
+    },
+    {
+      "name": "vol_contraction",
+      "index": 35,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "vol_contraction: normalized volatility and regime measurement"
+    },
+    {
+      "name": "is_vol_extreme",
+      "index": 36,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "is_vol_extreme: normalized volatility and regime measurement"
+    },
+    {
+      "name": "is_range",
+      "index": 37,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "is_range: normalized volatility and regime measurement"
+    },
+    {
+      "name": "is_trending_bull",
+      "index": 38,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "is_trending_bull: normalized volatility and regime measurement"
+    },
+    {
+      "name": "is_trending_bear",
+      "index": 39,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "is_trending_bear: normalized volatility and regime measurement"
+    },
+    {
+      "name": "is_transition",
+      "index": 40,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "is_transition: normalized volatility and regime measurement"
+    },
+    {
+      "name": "nearest_support_distance",
+      "index": 41,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "nearest_support_distance: normalized support/resistance zone measurement"
+    },
+    {
+      "name": "nearest_resistance_distance",
+      "index": 42,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "nearest_resistance_distance: normalized support/resistance zone measurement"
+    },
+    {
+      "name": "support_strength",
+      "index": 43,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "support_strength: normalized support/resistance zone measurement"
+    },
+    {
+      "name": "resistance_strength",
+      "index": 44,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "resistance_strength: normalized support/resistance zone measurement"
+    },
+    {
+      "name": "doji",
+      "index": 45,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "doji: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "hammer",
+      "index": 46,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "hammer: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "shooting_star",
+      "index": 47,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "shooting_star: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "engulfing_bull",
+      "index": 48,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "engulfing_bull: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "engulfing_bear",
+      "index": 49,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "engulfing_bear: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "inside",
+      "index": 50,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "inside: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "marubozu",
+      "index": 51,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "marubozu: normalized candlestick morphology measurement"
+    },
+    {
+      "name": "running_present",
+      "index": 52,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "running_present: normalized running-candle observation measurement"
+    },
+    {
+      "name": "running_direction",
+      "index": 53,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "running_direction: normalized running-candle observation measurement"
+    },
+    {
+      "name": "running_body_ratio",
+      "index": 54,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "running_body_ratio: normalized running-candle observation measurement"
+    },
+    {
+      "name": "running_range",
+      "index": 55,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "running_range: normalized running-candle observation measurement"
+    },
+    {
+      "name": "running_confidence",
+      "index": 56,
+      "type": "float32",
+      "normalization": "feature-engine normalized; no future statistics",
+      "description": "running_confidence: normalized running-candle observation measurement"
+    }
+  ]
+}

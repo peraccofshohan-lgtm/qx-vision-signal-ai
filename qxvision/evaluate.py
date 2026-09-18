@@ -1,11 +1,18 @@
-"""Reproducible metrics and walk-forward evaluation helpers."""
+"""Reproducible metrics, selective-risk curves and walk-forward helpers."""
 from __future__ import annotations
 
 import math
+import random
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-from .domain import EvaluationReport, SignalDirection
+from .domain import EvaluationReport
+
+
+def _validate_probabilities(probabilities: Sequence[Optional[float]]) -> None:
+    invalid = [p for p in probabilities if p is not None and (not math.isfinite(p) or p < 0.0 or p > 1.0)]
+    if invalid:
+        raise ValueError("probability outside [0,1]")
 
 
 def brier_score(probabilities: Sequence[float], labels: Sequence[int]) -> float:
@@ -30,12 +37,24 @@ def ece(probabilities: Sequence[float], labels: Sequence[int], bins: int = 10) -
     return total
 
 
+def reliability_curve(probabilities: Sequence[float], labels: Sequence[int], bins: int = 10) -> List[Dict[str, float]]:
+    _validate_probabilities(probabilities)
+    curve=[]
+    for i in range(bins):
+        lo, hi=i/bins,(i+1)/bins
+        ids=[j for j,p in enumerate(probabilities) if lo<=p<hi or (i==bins-1 and p==hi)]
+        curve.append({"lower":lo,"upper":hi,"count":float(len(ids)),"mean_probability":sum(probabilities[j] for j in ids)/len(ids) if ids else 0.0,"observed_rate":sum(labels[j] for j in ids)/len(ids) if ids else 0.0})
+    return curve
+
+
 def _bucket(p: float) -> str:
     lo = min(0.9, max(0.5, math.floor(max(p, 0.5) * 20) / 20))
     return f"{int(lo*100)}–{int(min(1.0, lo+.05)*100)}%" if lo < .9 else "90%+"
 
 
-def evaluate(predictions: Sequence[Optional[int]], probabilities: Sequence[Optional[float]], labels: Sequence[int], regimes: Optional[Sequence[str]] = None) -> EvaluationReport:
+def evaluate(predictions: Sequence[Optional[int]], probabilities: Sequence[Optional[float]], labels: Sequence[int], regimes: Optional[Sequence[str]] = None, *, all_regimes: Optional[Sequence[str]] = None) -> EvaluationReport:
+    if not len(predictions) == len(probabilities) == len(labels): raise ValueError("prediction, probability, and label lengths differ")
+    _validate_probabilities(probabilities)
     accepted = [(p, q, y, regimes[i] if regimes else "UNKNOWN") for i, (p, q, y) in enumerate(zip(predictions, probabilities, labels)) if p is not None and q is not None]
     n = len(labels); correct = sum(int(p == y) for p, _, y, _ in accepted); incorrect = len(accepted) - correct
     probs = [q for _, q, _, _ in accepted]; ys = [y for _, _, y, _ in accepted]
@@ -44,9 +63,14 @@ def evaluate(predictions: Sequence[Optional[int]], probabilities: Sequence[Optio
         conf = max(q, 1 - q); b = _bucket(conf); row = conf_buckets[b]; row["count"] += 1; row["accuracy"] += float(p == y); row["calibration_error"] += abs(conf - float(p == y))
     for row in conf_buckets.values():
         if row["count"]: row["accuracy"] /= row["count"]; row["calibration_error"] /= row["count"]
-    by_regime: Dict[str, Dict[str, float]] = defaultdict(lambda: {"count": 0, "accuracy": 0})
-    for p, _, y, r in accepted: by_regime[r]["count"] += 1; by_regime[r]["accuracy"] += float(p == y)
-    for row in by_regime.values(): row["accuracy"] /= max(1, row["count"])
+    by_regime: Dict[str, Dict[str, float]] = defaultdict(lambda: {"count": 0, "accuracy": 0, "coverage": 0, "brier_score": 0})
+    if all_regimes:
+        for name in all_regimes: by_regime[name] = {"count": 0, "accuracy": 0, "coverage": 0, "brier_score": 0, "status": "INSUFFICIENT_DATA"}
+    if regimes:
+        for i, regime in enumerate(regimes): by_regime[regime]["coverage"] += float(predictions[i] is not None) / max(1, sum(1 for item in regimes if item == regime))
+    for p, q, y, r in accepted: by_regime[r]["count"] += 1; by_regime[r]["accuracy"] += float(p == y); by_regime[r]["brier_score"] += (q - y) ** 2
+    for row in by_regime.values():
+        if row["count"]: row["accuracy"] /= row["count"]; row["brier_score"] /= row["count"]; row["status"] = "MEASURED"
     positives=[(p,y) for p,_,y,_ in accepted if y==1]; negatives=[(p,y) for p,_,y,_ in accepted if y==0]
     sensitivity=sum(int(p==y) for p,y in positives)/len(positives) if positives else 0.0
     specificity=sum(int(p==y) for p,y in negatives)/len(negatives) if negatives else 0.0
@@ -56,6 +80,33 @@ def evaluate(predictions: Sequence[Optional[int]], probabilities: Sequence[Optio
         if p == y: cur += 1; cur_loss = 0; streak = max(streak, cur)
         else: cur_loss += 1; cur = 0; loss = max(loss, cur_loss)
     return EvaluationReport(n, len(accepted), n - len(accepted), len(accepted) / max(1, n), correct, incorrect, correct / len(accepted) if accepted else None, balanced, brier_score(probs, ys) if accepted else None, log_loss(probs, ys) if accepted else None, ece(probs, ys) if accepted else None, streak, loss, dict(conf_buckets), dict(by_regime), [])
+
+
+def risk_coverage_curve(predictions: Sequence[int], probabilities: Sequence[float], labels: Sequence[int], thresholds: Sequence[float] = tuple(i / 100 for i in range(50, 96, 5))) -> List[Dict[str, float]]:
+    if not len(predictions) == len(probabilities) == len(labels): raise ValueError("risk curve lengths differ")
+    _validate_probabilities(probabilities); result=[]
+    for threshold in thresholds:
+        ids=[i for i,p in enumerate(probabilities) if max(p,1-p)>=threshold]
+        correct=sum(int(predictions[i]==labels[i]) for i in ids); count=len(ids)
+        result.append({"threshold":float(threshold),"sample_count":float(count),"coverage":count/max(1,len(labels)),"accuracy":correct/count if count else 0.0,"error_rate":1-correct/count if count else 0.0})
+    return result
+
+
+def baseline_predictions(labels: Sequence[int], *, previous: Optional[Sequence[int]] = None, momentum: Optional[Sequence[int]] = None, seed: int = 17) -> Dict[str, List[int]]:
+    if previous is None or momentum is None: raise ValueError("previous and momentum baseline vectors are required")
+    rng=random.Random(seed)
+    majority=1 if sum(labels)>=len(labels)/2 else 0
+    return {"random_50_50":[rng.randrange(2) for _ in labels],"majority_class":[majority for _ in labels],"previous_direction":list(previous),"simple_momentum":list(momentum)}
+
+
+def grouped_metrics(predictions: Sequence[Optional[int]], probabilities: Sequence[Optional[float]], labels: Sequence[int], groups: Sequence[str]) -> Dict[str, Dict[str, object]]:
+    if len(groups)!=len(labels): raise ValueError("group length differs")
+    result={}
+    for group in sorted(set(groups)):
+        ids=[i for i,value in enumerate(groups) if value==group]
+        report=evaluate([predictions[i] for i in ids],[probabilities[i] for i in ids],[labels[i] for i in ids])
+        result[group]={"sample_count":report.total_samples,"accepted_count":report.accepted_predictions,"coverage":report.coverage,"accuracy":report.accuracy,"brier_score":report.brier_score,"ece":report.ece,"status":"MEASURED" if report.total_samples else "INSUFFICIENT_DATA"}
+    return result
 
 
 def walk_forward_splits(n: int, train_size: int, validation_size: int, step: Optional[int] = None, purge: int = 1):
