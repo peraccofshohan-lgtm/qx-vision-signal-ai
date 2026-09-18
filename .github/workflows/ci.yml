@@ -35,8 +35,15 @@ jobs:
           gradle-version: 8.10.2
       - name: Build Android
         run: |
-          set -o pipefail
+          set +e
           gradle test assembleDebug --stacktrace --console=plain 2>&1 | tee gradle-ci.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            tail -80 gradle-ci.log
+            summary=$(tail -20 gradle-ci.log | tr '\n' ' ' | cut -c1-6000)
+            echo "::error title=Gradle build failure::$summary"
+            exit "$status"
+          fi
       - name: Upload Gradle diagnostics
         if: always()
         uses: actions/upload-artifact@v4
