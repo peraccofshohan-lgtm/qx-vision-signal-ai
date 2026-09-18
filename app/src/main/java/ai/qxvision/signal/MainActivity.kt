@@ -5,7 +5,9 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,7 +43,7 @@ class MainActivity:ComponentActivity(){
     Scaffold(containerColor=Ink){pad->Column(Modifier.padding(pad).fillMaxSize().padding(horizontal=20.dp)){
         Row(Modifier.fillMaxWidth().padding(top=22.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("QX VISION",color=Color.White,fontSize=21.sp,fontWeight=FontWeight.Bold);Text("SIGNAL AI  /  V1.0.0",color=Teal,fontSize=10.sp,letterSpacing=2.sp)};Text("LOCAL",color=Teal,fontSize=11.sp,fontWeight=FontWeight.Bold)}
         Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom=16.dp)){listOf("HOME","ANALYSIS","HISTORY","PERFORMANCE","MODEL","SETTINGS").forEach{p->TextButton(onClick={page=p}){Text(p,color=if(page==p)Teal else Muted,fontSize=11.sp)}}}
-        when(page){"HOME"->Home({picker.launch(ActivityResultContracts.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly));page="ANALYSIS"},{page="HISTORY"});"ANALYSIS"->Analysis(state,{picker.launch(ActivityResultContracts.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},{page="HOME"});"HISTORY"->History(history,{id,outcome->vm.labelOutcome(id,outcome)});"PERFORMANCE"->Performance(history);"MODEL"->ModelInfo(history.size);"SETTINGS"->Settings(strictness,vm::setStrictness);else->Home({picker.launch(ActivityResultContracts.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},{page="HISTORY"})}
+        when(page){"HOME"->Home({picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly));page="ANALYSIS"},{page="HISTORY"});"ANALYSIS"->Analysis(state,{picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},{page="HOME"});"HISTORY"->History(history,{id,outcome->vm.labelOutcome(id,outcome)});"PERFORMANCE"->Performance(history);"MODEL"->ModelInfo(history.size);"SETTINGS"->Settings(strictness,vm::setStrictness);else->Home({picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},{page="HISTORY"})}
     }}
 }
 

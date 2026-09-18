@@ -30,7 +30,7 @@ interface PredictionDao {
     @Query("SELECT COUNT(*) FROM predictions") suspend fun count():Int
 }
 
-@Database(entities=[PredictionEntity::class],version=1,exportSchema=true)
+@Database(entities=[PredictionEntity::class],version=1,exportSchema=false)
 abstract class SignalDatabase:RoomDatabase(){ abstract fun predictions():PredictionDao
     companion object { @Volatile private var instance:SignalDatabase?=null; fun get(context:Context)=instance?: synchronized(this){instance?:Room.databaseBuilder(context.applicationContext,SignalDatabase::class.java,"qx_signal.db").build().also{instance=it}} }
 }
