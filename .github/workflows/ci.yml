@@ -30,10 +30,10 @@ jobs:
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
-      - name: Create Gradle wrapper when checkout is source-only
-        run: gradle wrapper --gradle-version 8.10.2
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test assembleDebug
+        with:
+          gradle-version: 8.10.2
+      - run: gradle test assembleDebug
       - name: Verify debug APK and manifest package
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
